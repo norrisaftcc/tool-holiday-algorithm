@@ -6,8 +6,6 @@ Based on prompts engineered by Clive
 import os
 from typing import Optional, List, Dict, Any
 from enum import Enum
-from datetime import datetime, timedelta
-import json
 
 try:
     import anthropic
@@ -50,7 +48,7 @@ class GiftBrainstormingService:
                 "Install with: pip install anthropic"
             )
 
-        self.api_key = api_key or os.getenv("CLAUDE_API_KEY")
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if self.api_key:
             self.client = anthropic.Anthropic(api_key=self.api_key)
         else:

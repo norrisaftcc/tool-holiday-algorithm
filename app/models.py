@@ -6,7 +6,7 @@ Case File: Database Schema
 
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, create_engine
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship as sa_relationship
 from pydantic import BaseModel, Field

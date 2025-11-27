@@ -297,7 +297,7 @@ def dashboard_page():
                     st.markdown("---")
                     with st.expander("✨ Get AI Gift Suggestions", expanded=False):
                         # Check if API key is configured
-                        api_key = os.getenv("CLAUDE_API_KEY") or st.session_state.get("claude_api_key")
+                        api_key = os.getenv("ANTHROPIC_API_KEY") or st.session_state.get("anthropic_api_key")
 
                         if not api_key:
                             st.info("🔑 Add your Claude API key in Settings (top right) to enable AI gift suggestions")
