@@ -7,6 +7,7 @@ Case: Rapid MVP Development - Ready for Deployment
 import streamlit as st
 from pathlib import Path
 import sys
+import os
 
 # Add app to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -15,6 +16,7 @@ from app.database import init_db, get_db, close_db
 from app.repository import UserRepository, GifteeRepository, GiftIdeaRepository
 from app.config import SESSION_KEYS, APP_NAME, EMPTY_STATES
 from app.utils.helpers import calculate_progress, format_currency, render_status_badge
+from app.services.ai_service import GiftBrainstormingService, GiftScenario
 
 # Configure Streamlit page
 st.set_page_config(
@@ -290,6 +292,128 @@ def dashboard_page():
                                 st.rerun()
                             else:
                                 st.error("Please enter a gift title")
+
+                    # AI Gift Suggestions
+                    st.markdown("---")
+                    with st.expander("✨ Get AI Gift Suggestions", expanded=False):
+                        # Check if API key is configured
+                        api_key = os.getenv("CLAUDE_API_KEY") or st.session_state.get("claude_api_key")
+
+                        if not api_key:
+                            st.info("🔑 Add your Claude API key in Settings (top right) to enable AI gift suggestions")
+                            st.caption("Need an API key? Visit https://console.anthropic.com")
+                        else:
+                            # Scenario selection
+                            scenarios = GiftBrainstormingService(api_key).get_available_scenarios()
+
+                            scenario_options = {s["label"]: s["value"] for s in scenarios}
+                            selected_scenario_label = st.selectbox(
+                                "Choose brainstorming scenario:",
+                                options=list(scenario_options.keys()),
+                                help="Different scenarios ask different questions to give you better suggestions"
+                            )
+                            selected_scenario = GiftScenario(scenario_options[selected_scenario_label])
+
+                            # Context gathering based on scenario
+                            context = {
+                                "relationship": giftee.relationship or "someone special",
+                                "budget": f"${giftee.budget}" if giftee.budget else "flexible",
+                            }
+
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                context["interests"] = st.text_area(
+                                    "Their interests/hobbies:",
+                                    value=giftee.notes or "",
+                                    help="What do they enjoy doing?",
+                                    key=f"ai_interests_{giftee.id}"
+                                )
+
+                            with col2:
+                                if selected_scenario == GiftScenario.BUDGET:
+                                    context["values"] = st.text_input(
+                                        "What matters most to them:",
+                                        help="Values, priorities, or what they care about",
+                                        key=f"ai_values_{giftee.id}"
+                                    )
+                                elif selected_scenario == GiftScenario.LAST_MINUTE:
+                                    context["days_until_event"] = st.selectbox(
+                                        "Days until you need the gift:",
+                                        options=["1-2", "3-5", "6-10"],
+                                        key=f"ai_days_{giftee.id}"
+                                    )
+                                elif selected_scenario == GiftScenario.DIY:
+                                    context["your_skills"] = st.text_input(
+                                        "Your crafting/DIY skills:",
+                                        help="e.g., basic crafting, woodworking, baking",
+                                        key=f"ai_skills_{giftee.id}"
+                                    )
+                                    context["time_available"] = st.text_input(
+                                        "Time you can spend:",
+                                        value="A few hours",
+                                        key=f"ai_time_{giftee.id}"
+                                    )
+                                else:
+                                    context["gift_preferences"] = st.text_input(
+                                        "Gift preferences:",
+                                        help="Practical, sentimental, experiences, etc.",
+                                        key=f"ai_prefs_{giftee.id}"
+                                    )
+
+                            num_ideas = st.slider(
+                                "Number of suggestions:",
+                                min_value=3,
+                                max_value=8,
+                                value=5,
+                                key=f"ai_num_{giftee.id}"
+                            )
+
+                            if st.button("✨ Generate Suggestions", key=f"ai_gen_{giftee.id}", use_container_width=True):
+                                with st.spinner("Thinking of perfect gifts..."):
+                                    ai_service = GiftBrainstormingService(api_key)
+                                    result = ai_service.brainstorm_gifts(
+                                        scenario=selected_scenario,
+                                        giftee_name=giftee.name,
+                                        context=context,
+                                        num_ideas=num_ideas
+                                    )
+
+                                    if result["success"]:
+                                        st.success(f"Generated {len(result['ideas'])} gift ideas! (Cost: ~{result['cost_estimate']})")
+
+                                        for i, idea in enumerate(result['ideas'], 1):
+                                            with st.container():
+                                                col_idea, col_add = st.columns([4, 1])
+
+                                                with col_idea:
+                                                    st.markdown(f"**{i}. {idea['title']}**")
+                                                    if idea.get('description'):
+                                                        st.caption(f"📝 {idea['description']}")
+                                                    if idea.get('why_it_fits'):
+                                                        st.caption(f"💡 {idea['why_it_fits']}")
+                                                    if idea.get('price_range'):
+                                                        st.caption(f"💰 {idea['price_range']}")
+
+                                                with col_add:
+                                                    if st.button("Add", key=f"add_ai_{giftee.id}_{i}"):
+                                                        # Add to gift ideas
+                                                        GiftIdeaRepository.create_gift_idea(
+                                                            db,
+                                                            giftee.id,
+                                                            idea['title'],
+                                                            description=idea.get('description') or idea.get('why_it_fits'),
+                                                            price=None,
+                                                            rank=i,
+                                                            status="considering"
+                                                        )
+                                                        st.success(f"Added: {idea['title']}")
+                                                        st.rerun()
+
+                                                st.markdown("---")
+                                    else:
+                                        st.error(result['error'])
+
+                    st.markdown("---")
 
                     # Display existing gifts
                     if gifts:
