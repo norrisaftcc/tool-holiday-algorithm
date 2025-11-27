@@ -28,10 +28,10 @@ DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 # Status workflow
 GIFT_STATUSES = ["considering", "acquired", "wrapped", "given"]
 STATUS_COLORS = {
-    "considering": "🔵",  # Gray
-    "acquired": "🟢",     # Blue
-    "wrapped": "🟣",      # Purple
-    "given": "✅"         # Green
+    "considering": {"bg": "#F3F4F6", "fg": "#6B7280", "emoji": "🤔"},
+    "acquired": {"bg": "#DBEAFE", "fg": "#2563EB", "emoji": "✓"},
+    "wrapped": {"bg": "#EDE9FE", "fg": "#7C3AED", "emoji": "🎁"},
+    "given": {"bg": "#D1FAE5", "fg": "#059669", "emoji": "🎉"}
 }
 
 # UI Messages

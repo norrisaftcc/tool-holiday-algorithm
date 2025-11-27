@@ -50,12 +50,7 @@ def init_db():
 
 def get_db() -> Session:
     """Get a database session."""
-    db = SessionLocal()
-    try:
-        return db
-    except Exception as e:
-        db.close()
-        raise e
+    return SessionLocal()
 
 
 def close_db(db: Session):
