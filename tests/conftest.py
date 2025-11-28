@@ -25,7 +25,6 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import Base, User, Giftee, GiftIdea
-from app.repository import UserRepository, GifteeRepository, GiftIdeaRepository
 import bcrypt
 
 

@@ -30,16 +30,15 @@ Purpose: Educational testing example for CS students
 """
 
 import pytest
-import bcrypt
 from app.repository import UserRepository
 from app.models import User
-from tests.fixtures.test_data import UserFactory
 
 
 # =============================================================================
 # TEST CLASS: User Creation
 # =============================================================================
 
+@pytest.mark.unit
 class TestUserCreation:
     """
     Tests for creating new users.
@@ -154,6 +153,7 @@ class TestUserCreation:
 # TEST CLASS: User Retrieval
 # =============================================================================
 
+@pytest.mark.unit
 class TestUserRetrieval:
     """
     Tests for retrieving existing users.
@@ -274,6 +274,7 @@ class TestUserRetrieval:
 # TEST CLASS: Password Verification
 # =============================================================================
 
+@pytest.mark.unit
 class TestPasswordVerification:
     """
     Tests for password verification logic.
@@ -374,9 +375,11 @@ class TestPasswordVerification:
         """
         # Arrange: Create user with known password
         correct_password = "correct_password"
+        # Create unique email (handle empty string case)
+        email_suffix = wrong_password[:5] if wrong_password else "empty"
         user = UserRepository.create_user(
             db_session,
-            email=f"param_{wrong_password[:5]}@test.com",  # Unique email for each test
+            email=f"param_{email_suffix}@test.com",
             name="Param Test",
             password=correct_password
         )
@@ -393,6 +396,7 @@ class TestPasswordVerification:
 # TEST CLASS: User Existence Check
 # =============================================================================
 
+@pytest.mark.unit
 class TestUserExistence:
     """
     Tests for checking if a user exists.
@@ -540,7 +544,7 @@ class TestUserWorkflows:
         email = "auth@test.com"
         password = "secure_password"
 
-        user = UserRepository.create_user(db_session, email, "Auth Test", password)
+        UserRepository.create_user(db_session, email, "Auth Test", password)
 
         # Step 2: User logs in (retrieve by email)
         login_user = UserRepository.get_user_by_email(db_session, email)
